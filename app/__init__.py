@@ -4,7 +4,7 @@ import os
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 env_path = os.path.join(base_dir, ".env")
-load_dotenv(env_path, override=True)
+load_dotenv(env_path, override=False)
 
 from .config import Config
 from .extensions import db, login_manager, migrate

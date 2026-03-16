@@ -63,7 +63,7 @@ def view_daily_queue():
     "success": True,
     "date": appointment_date.isoformat(),
     "count": len(appointments),
-    "date": [appointment_payload(appointment) for appointment in appointments]
+    "appointments": [appointment_payload(appointment) for appointment in appointments]
   }), 200
 
 @admin_bp.put("/appointments/<int:appointment_id>/status")
@@ -187,7 +187,7 @@ def serve_next_patient():
 
   return jsonify({
     "success": True,
-    "message": "Next patint served successfully.",
+    "message": "Next patient served successfully.",
     "data": appointment_payload(next_appointment)
   }), 200
 
@@ -236,8 +236,8 @@ def view_audit_logs():
       "notes": log.notes
     })
 
-    return jsonify({
-      "success": True,
-      "count": len(data),
-      "data": data
-    }), 200
+  return jsonify({
+    "success": True,
+    "count": len(data),
+    "data": data
+  }), 200
