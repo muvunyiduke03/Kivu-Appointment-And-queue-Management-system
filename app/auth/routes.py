@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 
 from . import auth_bp
 from ..extensions import db
@@ -8,6 +8,12 @@ from ..models import Users
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
+
+  if current_user.is_authenticated:
+    if current_user.role == "admin":
+      return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("patient.patient_dashboard"))
+  
   if request.method == "POST":
     name = request.form.get("name", "").strip()
     email = request.form.get("email", "").strip().lower()
@@ -38,6 +44,12 @@ def register():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+
+  if current_user.is_authenticated:
+    if current_user.role == "admin":
+      return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("patient.patient_dashboard"))
+  
   if request.method =="POST":
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
@@ -49,7 +61,10 @@ def login():
     
     login_user(user)
     flash("Logged in successfully.", "success")
-    return redirect(url_for("home"))
+    if user.role == "admin":
+      return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("patient.patient_dashboard"))
+  
   return render_template("auth/login.html")
 
 @auth_bp.route("/logout")

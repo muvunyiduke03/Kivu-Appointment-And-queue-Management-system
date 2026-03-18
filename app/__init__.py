@@ -42,6 +42,9 @@ def create_app():
 
   from .admin import admin_bp
   app.register_blueprint(admin_bp)
+
+  from .patient import patient_bp
+  app.register_blueprint(patient_bp)
   
   @app.get("/")
   def home():

@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from flask import request, jsonify
+from flask import render_template
 from flask_login import login_required, current_user
 
 from . import admin_bp
@@ -117,6 +118,15 @@ def update_appointment_status(appointment_id):
     "message": "Appointment status updated successfully.",
     "data": appointment_payload(appointment)
   }), 200
+
+@admin_bp.get("/dashboard")
+@login_required
+def admin_dashboard():
+  if current_user.role != "admin":
+    return {"success": False, "message": "Only admins can access this page."}
+  
+  return render_template("admin/admin_dashboard.html")
+
 
 @admin_bp.get("/dashboard-summary")
 @login_required
