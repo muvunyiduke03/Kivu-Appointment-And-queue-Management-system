@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
-  const RegisterForm = document.getElementById("registerForm");
+  const registerForm = document.getElementById("registerForm");
   const authMessage = document.getElementById("authMessage");
 
   function showMessage(message, type = "success") {

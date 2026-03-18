@@ -18,8 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
     me:"/api/auth/me",
     logout: "/api/auth/logout",
     myAppointments: "/api/appointments/my",
-    bookAppointments: "/api/appointments/book",
-    cancelAppointments: (id) => `/api/appointments/${id}/cancel`,
+    bookAppointment: "/api/appointments/book",
+    cancelAppointment: (id) => `/api/appointments/${id}/cancel`,
   };
 
   let appointments = [];
@@ -89,12 +89,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderAppointments() {
-    if (!appointmentsTableBody) return;
+    if (!appointmentsTableBodyEl) return;
 
-    appointmentsTableBody.innerHTML = "";
+    appointmentsTableBodyEl.innerHTML = "";
 
     if (!appointments.length) {
-      appointmentsTableBody.innerHTML = `
+      appointmentsTableBodyEl.innerHTML = `
       <tr>
         <td colspan="5">No appointments found.</td>
       </tr>
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </td>
         `;
 
-        appointmentsTableBody.appendChild(row);
+        appointmentsTableBodyEl.appendChild(row);
       });
     addCancelButtonListeners();
     updateSummaryCards();
@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "success"
       );
 
-      if (bookingForm) bookingForm.reset();
+      if (bookingFormEl) bookingFormEl.reset();
 
       await loadAppointments();
     } catch (error) {
@@ -274,12 +274,12 @@ document.addEventListener("DOMContentLoaded", () => {
     await loadAppointments();
   }
 
-  if (bookingForm) {
-    bookingForm.addEventListener("submit", handleBooking);
+  if (bookingFormEl) {
+    bookingFormEl.addEventListener("submit", handleBooking);
   }
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", handleLogout);
+  if (logoutBtnEl) {
+    logoutBtnEl.addEventListener("click", handleLogout);
   }
 
   initDashboard();
