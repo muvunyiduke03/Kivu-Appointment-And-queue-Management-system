@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from dotenv import load_dotenv
 import os
 
@@ -9,10 +9,10 @@ load_dotenv(env_path, override=False)
 from .config import Config
 from .extensions import db, login_manager, migrate
 
-def create_app():
 
+def create_app(config_object=None):
   app = Flask(__name__)
-  app.config.from_object(Config)
+  app.config.from_object(config_object or Config)
 
   db.init_app(app)
   login_manager.init_app(app)
@@ -23,7 +23,6 @@ def create_app():
   @login_manager.unauthorized_handler
   def unauthorized():
     return {"success": False, "message": "Authentication required!"}, 401
-  
 
   from . import models
   from .models import Users
@@ -48,6 +47,6 @@ def create_app():
   
   @app.get("/")
   def home():
-    return {"message": "Kivu up and running...✅"}
+    return render_template("index.html")
   
   return app

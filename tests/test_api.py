@@ -20,8 +20,7 @@ class testConfig:
 
 @pytest.fixture
 def app():
-  app = create_app()
-  app.config.from_object(testConfig)
+  app = create_app(testConfig)
 
   with app.app_context():
     db.drop_all()
@@ -233,3 +232,30 @@ def test_admin_can_update_status(client, admin_user, patient_user):
   data = response.get_json()
   assert data["success"] is True
   assert data["data"]["status"] == "served"
+
+
+def test_home_page_renders(client):
+  response = client.get("/")
+
+  assert response.status_code == 200
+  assert b"KIVU Appointment & Queue Management" in response.data
+
+
+def test_patient_dashboard_renders_for_logged_in_patient(client, patient_user):
+  login(client, "patient@gmail.com", "Patient123!")
+
+  response = client.get("/patient/dashboard")
+
+  assert response.status_code == 200
+  assert b"Patient Dashboard" in response.data
+  assert b"/static/JS/patientDashboard.js" in response.data
+
+
+def test_admin_dashboard_renders_for_logged_in_admin(client, admin_user):
+  login(client, "admin@hospital.com", "Hoadmin123$")
+
+  response = client.get("/admin/dashboard")
+
+  assert response.status_code == 200
+  assert b"Admin Queue Dashboard" in response.data
+  assert b"/static/JS/adminDashboard.js" in response.data

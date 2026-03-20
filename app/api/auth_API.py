@@ -1,11 +1,10 @@
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 
 from . import api_bp
 from ..extensions import db
 from ..models import Users
-from ..config import Config
 
 def user_payload(user: Users):
   return{
@@ -31,7 +30,7 @@ def api_register():
   if Users.query.filter_by(email=email).first():
     return jsonify({"success": False, "message": "Email already registered!"}), 409
   
-  role = "admin" if (admin_code and admin_code == Config.ADMIN_CODE) else "patient"
+  role = "admin" if (admin_code and admin_code == current_app.config.get("ADMIN_CODE")) else "patient"
 
   user = Users(
     name = name,

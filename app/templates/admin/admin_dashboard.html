@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - KIVU</title>
+  <link rel="stylesheet" href="../../static/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">Kigali Hospital</div>
+    <div class="topbar-right">
+      <span class="patient-name" id="adminName">Welcom, Admin</span>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+    <section class="welcome-section">
+      <h1>Admin Queue Dashboard</h1>
+      <p>Monitor the queue in real time.</p>
+    </section>
+
+    <section class="summary-cards">
+      <div class="card">
+        <h3>Today's Total</h3>
+        <p id="totalAppointments">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Pending</h3>
+        <p id="pendingAppointments">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Served</h3>
+        <p id="servedAppointments">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Next Patient</h3>
+        <p id="nextPatient">N/A</p>
+      </div>
+    </section>
+
+    <section class="content-grid admin-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Queue Controls</h2>
+          <button id="serveNextBtn" class="primary-btn">Next Patient</button>
+        </div>
+
+        <div class="form-group inline-form-group">
+          <label for="queueDate">Queue date</label>
+          <input type="date" id="queueDate" name="queueDate">
+        </div>
+
+        <div id="notificationBox" class="notification" style="display: none;"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Audit Logs</h2>
+        <ul id="auditLogList" class="audit-log-list">
+          <li>No activity yet.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="appointments-section panel">
+      <h2>Queue Appointments</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Queue</th>
+              <th>Patient</th>
+              <th>Email</th>
+              <th>Date</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../static/JS/adminDashboard.js"></script>
+</body>
+</html>
