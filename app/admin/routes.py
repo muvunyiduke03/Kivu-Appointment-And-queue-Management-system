@@ -135,22 +135,33 @@ def dashboard_summary():
   if auth_error:
     return auth_error
   
-  today = date.today()
+  appointment_date_raw = (request.args.get("appointment_date") or "").strip()
 
-  total = Appointment.query.filter_by(appointment_date=today).count()
-  pending = Appointment.query.filter_by(appointment_date=today, status="pending").count()
-  served = Appointment.query.filter_by(appointment_date=today, status="served").count()
-  cancelled = Appointment.query.filter_by(appointment_date=today, status="cancelled").count()
+  if appointment_date_raw:
+    try:
+      summary_date = datetime.strptime(appointment_date_raw, "%Y-%m-%d").date()
+    except ValueError:
+      return jsonify({
+        "success": False,
+        "message": "Invalid date format. use YYY-MM-DD"
+      }), 400
+    else:
+      summary_date = date.today()
+
+  total = Appointment.query.filter_by(appointment_date=summary_date).count()
+  pending = Appointment.query.filter_by(appointment_date=summary_date, status="pending").count()
+  served = Appointment.query.filter_by(appointment_date=summary_date, status="served").count()
+  cancelled = Appointment.query.filter_by(appointment_date=summary_date, status="cancelled").count()
 
   next_pending = Appointment.query.filter_by(
-    appointment_date=today,
+    appointment_date=summary_date,
     status="pending"
   ).order_by(Appointment.queue_number.asc()).first()
 
   return jsonify({
     "success": True,
     "data": {
-      "date": today.isoformat(),
+      "date": summary_date.isoformat(),
       "total_appointments": total,
       "pending_appointments": pending,
       "served_appointments": served,

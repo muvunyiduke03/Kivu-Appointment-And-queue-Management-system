@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     me: "/api/auth/me",
     logout: "/api/auth/logout",
     queue: (appointmentDate) => `/admin/appointments/queue?appointment_date=${encodeURIComponent(appointmentDate)}`,
-    summary: "/admin/dashboard-summary",
+    summary: (appointmentDate) => `/admin/dashboard-summary?appointment_date=${encodeURIComponent(appointmentDate)}`,
     serveNext: "/admin/appointments/serve-next",
     updateStatus: (id) => `/admin/appointments/${id}/status`,
     auditLogs: "/admin/audit-logs",
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderSummary(summary) {
     totalAppointmentsEl.textContent = summary.total_appointments ?? 0;
-    pendingAppointmentsEl.textContent = summary.prnding_appointments ?? 0;
+    pendingAppointmentsEl.textContent = summary.pending_appointments ?? 0;
     servedAppointmentsEl.textContent = summary.served_appointments ?? 0;
     nextPatientEl.textContent = summary.next_patient_name ? `${summary.next_patient_name} (#${summary.next_queue_number})` : "N/A";
   }
@@ -126,7 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadSummary() {
-    const response = await fetch(API.summary, { credentials: "include" });
+    const appointmentDate = queueDateEl.value || getToday();
+    const response = await fetch(API.summary(appointmentDate), { credentials: "include"});
     const data = await response.json();
     if (!response.ok || !data.success) {
       throw new Error(data.message || "Failed to load summary.");
@@ -147,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadAuditLogs() {
     const response = await fetch(API.auditLogs, { credentials: "include" });
     const data = await response.json();
-    if (!response.ok || data.success) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || "Failed to load audit logs.");
     }
     renderAuditLogs(data.data || []);
@@ -183,7 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   queueDateEl?.addEventListener("change", () => {
-    loadQueue().catch((error) => showNotification(error.message || "Failed to load queue.", "error"));
+    Promise.all([loadQueue(), loadSummary()]).catch((error) => showNotification(error.message || "Failed to load dashboard data.", "error"));
   });
   serveNextBtnEl?.addEventListener("click", handleServeNext);
   logoutBtnEl?.addEventListener("click", handleLogout);
