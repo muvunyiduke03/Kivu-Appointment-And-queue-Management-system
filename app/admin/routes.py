@@ -143,10 +143,10 @@ def dashboard_summary():
     except ValueError:
       return jsonify({
         "success": False,
-        "message": "Invalid date format. use YYY-MM-DD"
+        "message": "Invalid date format. use YYYY-MM-DD"
       }), 400
-    else:
-      summary_date = date.today()
+  else:
+    summary_date = date.today()
 
   total = Appointment.query.filter_by(appointment_date=summary_date).count()
   pending = Appointment.query.filter_by(appointment_date=summary_date, status="pending").count()
