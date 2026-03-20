@@ -10,6 +10,24 @@ document.addEventListener("DOMContentLoaded", () => {
     authMessage.style.display = "block";
   }
 
+  async function parseApiResponse(response) {
+    const rawBody = await response.text();
+
+    if (!rawBody.trim()) {
+      throw new Error(
+        "The server returned an empty response. Make sure you opened the app through the flask server, not the HTML file."
+      );
+    }
+
+    try {
+      return JSON.parse(rawBody);
+    } catch (error) {
+      throw new Error(
+        "The server did not return JSON. Make sure you opened the app through the flask server, not raw HTML file."
+      );
+    }
+  }
+
   if (loginForm) {
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -17,8 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
-      try{
-        const response = await fetch ("/api/auth/login", {
+      try {
+        const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -27,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json();
+        const data = await parseApiResponse(response);
 
         if (!response.ok) {
           throw new Error(data.message || "Login failed.");
@@ -54,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
-      try{
+      try {
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: {
@@ -63,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ name, email, password })
         });
 
-        const data = await response.json();
+        const data = await parseApiResponse(response);
 
         if (!response.ok) {
           throw new Error(data.message || "Registration failed.");

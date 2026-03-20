@@ -9,15 +9,15 @@
 <body>
   <main class="landing-page">
     <section class="landing-hero panel">
-      <span class="eyebrow">KIVU HAQMS</span>
-      <h1>Patients book appointments, view queue in one place.</h1>
+      <span class="eyebrow">KIVU Hospital Appointmnt &amp; Queue Management System</span>
+
       <p>
-        Register and login to book and manage appointments with your doctors in the same place.
+        <strong>Register and login to book and manage appointments with your doctors in the same place.</strong>
       </p>
 
       <div class="landing-actions">
-        <a class="primary-btn" href="../templates/auth/login.html">Login</a>
-        <a class="secondary-btn" href="../templates/auth/register.html">Create account</a>
+        <a class="primary-btn" href="{{ url_for('auth.login') }}">Login</a>
+        <a class="secondary-btn" href="{{ url_for('auth.register') }}">Create account</a>
       </div>
     </section>
   </main>

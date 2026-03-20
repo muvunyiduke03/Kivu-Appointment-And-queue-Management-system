@@ -37,10 +37,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 4000);
   }
 
+  function parseAppointmentDate(dateString) {
+    if (!dateString) return null;
+
+    const [year, month, day] = dateString.split("-").map(Number);
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day);
+  }
+
   function formatDate(dateString) {
-    if(!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+    const date = parseAppointmentDate(dateString);
+    return date ? date.toLocaleDateString() : "N/A";
   }
 
   function getStatusClass(status) {
@@ -49,11 +57,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getNextActiveAppointment(list) {
-    const activeAppointments = list
-      .filter((appointment) => appointment.status !== "cancelled")
-      .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
-    
-      return activeAppointments.length ? activeAppointments[0] : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const upcomingAppointments = list.filter((appointment) => {
+      if (appointment.status !== "pending") return false;
+
+      const appointmentDate = parseAppointmentDate(appointment.appointment_date);
+      return appointmentDate && appointmentDate >= today;
+    })
+    .sort((a, b) => parseAppointmentDate(a.appointment_date) - parseAppointmentDate(b.appointment_date));
+
+    return upcomingAppointments.length ? upcomingAppointments[0]: null;
   }
 
   function updateSummaryCards(){
@@ -104,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     appointments
-      .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
+      .sort((a, b) => parseAppointmentDate(a.appointment_date) - parseAppointmentDate(b.appointment_date))
       .forEach((appointment) => {
         const row = document.createElement("tr");
 
