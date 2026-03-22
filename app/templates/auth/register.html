@@ -10,13 +10,27 @@
   <main class="auth-page">
     <section class="auth-card">
       <div class="auth-header">
-        <h1>Patient Registration</h1>
+        <h1>Create New Account</h1>
         <p>Create an account and book appointments.</p>
       </div>
 
       <div id="authMessage" class="notification" style="display: none;"></div>
 
       <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label for="role">Open account as</label>
+          <select id="role" name="role" required>
+            <option value="patient">Patient</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <div class="form-group admin-code-group hidden" id="adminCodeGroup">
+          <label for="adminCode">Admin Code</label>
+          <input type="password" id="adminCode" name="adminCode" placeholder="Enter the admin code">
+          <small>Required only when registering as an admin.</small>
+        </div>
+        
         <div class="form-group">
           <label for="name">Full Name</label>
           <input type="text" id="name" name="name" placeholder="Enter your full name" required>

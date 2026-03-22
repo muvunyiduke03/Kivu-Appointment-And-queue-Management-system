@@ -91,6 +91,7 @@ def test_register_admin(client):
       "name": "Admin",
       "email": "admin2@hospital.com",
       "password": "Admin123$",
+      "role": "admin",
       "admin_code": "admin123"
     }
   )
@@ -99,6 +100,39 @@ def test_register_admin(client):
   data = response.get_json()
   assert data["success"] is True
   assert data["data"]["role"] == "admin"
+
+
+def test_register_admin_requires_code(client):
+  response = client.post(
+    "/api/auth/register",
+    json={
+      "name": "Admin",
+      "email": "nocode@hospital.com",
+      "password": "Admin123$",
+      "role": "admin"
+    }
+  )
+
+  assert response.status_code == 400
+  data = response.get_json()
+  assert data["success"] is False
+
+
+def test_register_admin_rejects_invalid_code(client):
+  response = client.post(
+    "/api/auth/register",
+    json={
+      "name": "Admin",
+      "email": "wrongcode@hospital.com",
+      "password": "Admin123$",
+      "role": "admin",
+      "admin_code": "wrong-code"
+    }
+  )
+
+  assert response.status_code == 403
+  data = response.get_json()
+  assert data["success"] is False
 
 def test_login_success(client, patient_user):
   response = login(client, "patient@gmail.com", "Patient123!")
@@ -238,7 +272,7 @@ def test_home_page_renders(client):
   response = client.get("/")
 
   assert response.status_code == 200
-  assert b"KIVU Appointment & Queue Management" in response.data
+  assert b"KIVU Appointment &amp; Queue Management" in response.data
 
 
 def test_patient_dashboard_renders_for_logged_in_patient(client, patient_user):

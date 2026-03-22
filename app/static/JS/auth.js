@@ -2,12 +2,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
   const authMessage = document.getElementById("authMessage");
+  const roleField = document.getElementById("role");
+  const adminCodeGroup = document.getElementById("adminCodeGroup");
+  const adminCodeField = document.getElementById("adminCode");
 
   function showMessage(message, type = "success") {
     if (!authMessage) return;
     authMessage.textContent = message;
     authMessage.className = `notification ${type}`;
     authMessage.style.display = "block";
+  }
+
+  function toggleAdminCodeField() {
+    if (!roleField || !adminCodeGroup || !adminCodeField) return;
+
+    const isAdmin = roleField.value === "admin";
+    adminCodeGroup.classList.toggle("hidden", !isAdmin);
+    adminCodeField.required = isAdmin;
+
+    if (!isAdmin) {
+      adminCodeField.value = "";
+    }
   }
 
   async function parseApiResponse(response) {
@@ -26,6 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
         "The server did not return JSON. Make sure you opened the app through the flask server, not raw HTML file."
       );
     }
+  }
+
+  if (roleField) {
+    toggleAdminCodeField();
+    roleField.addEventListener("change", toggleAdminCodeField);
   }
 
   if (loginForm) {
@@ -68,9 +88,11 @@ document.addEventListener("DOMContentLoaded", () => {
     registerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
+      const role = roleField ? roleField.value : "patient";
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      const adminCode = adminCodeField ? adminCodeField.value.trim() : "";
 
       try {
         const response = await fetch("/api/auth/register", {
@@ -78,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ name, email, password })
+          body: JSON.stringify({ name, email, password, role, admin_code: adminCode })
         });
 
         const data = await parseApiResponse(response);

@@ -21,17 +21,25 @@ def api_register():
   name = (data.get("name") or "").strip()
   email = (data.get("email") or "").strip().lower()
   password = data.get("password") or ""
+  role = (data.get("role") or "patient").strip().lower()
   admin_code = (data.get("admin_code") or "").strip()
-
 
   if not name or not email or not password:
     return jsonify({"success": False, "message": "name, email, password required!!"}), 400
   
+  if role not in {"patient", "admin"}:
+    return jsonify({"success": False, "message": "Invalid role selected."}), 400
+  
   if Users.query.filter_by(email=email).first():
     return jsonify({"success": False, "message": "Email already registered!"}), 409
   
-  role = "admin" if (admin_code and admin_code == current_app.config.get("ADMIN_CODE")) else "patient"
-
+  if role == "admin":
+    if not admin_code:
+      return jsonify({"success": False, "message": "Admin code is required to register as an admin."}), 400
+    
+    if admin_code != current_app.config.get("ADMIN_CODE"):
+      return jsonify({"success": False, "message": "Invalid admin code."}), 403
+    
   user = Users(
     name = name,
     email = email,
