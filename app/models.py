@@ -1,6 +1,7 @@
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, time
 from .extensions import db
+
 
 class Users(UserMixin, db.Model):
   __tablename__ = "users"
@@ -14,6 +15,7 @@ class Users(UserMixin, db.Model):
 
   appointments = db.relationship("Appointment", backref="patient", lazy=True)
 
+
 class Appointment(db.Model):
   __tablename__ = "appointments"
   
@@ -21,6 +23,7 @@ class Appointment(db.Model):
   user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
   appointment_date = db.Column(db.Date, nullable=False)
+  appointment_time = db.Column(db.Time, nullable=False, default=lambda: time(hour=8, minute=0))
   reason= db.Column(db.Text, nullable=True)
 
   queue_number = db.Column(db.Integer, nullable=False)
@@ -37,6 +40,19 @@ class Appointment(db.Model):
   __table_args__ = (
     db.UniqueConstraint("appointment_date", "queue_number", name="uq_queue_per_day"),
   )
+
+
+class AdminAvailabilityDay(db.Model):
+  __tablename__ = "admin_availability_days"
+
+  id = db.Column(db.Integer, primary_key=True)
+  weekday = db.Column(
+    db.Enum("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"),
+    nullable=False,
+    unique=True,
+  )
+  is_enabled = db.Column(db.Boolean, nullable=False, default=False)
+  updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class AuditLog(db.Model):

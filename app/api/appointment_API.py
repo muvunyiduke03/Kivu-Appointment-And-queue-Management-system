@@ -1,9 +1,27 @@
 from flask import request, jsonify
 from flask_login import login_required, current_user
-from datetime import datetime, date
+from datetime import datetime, date, time, timedelta
 from . import api_bp
 from ..extensions import db
-from ..models import Appointment, AuditLog
+from ..models import Appointment, AuditLog, AdminAvailabilityDay
+
+
+DEFAULT_START_TIME = time(hour=8, minute=0)
+SLOT_DURATION_MINUTES = 30
+WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def get_enabled_days_set():
+  configured_days = AdminAvailabilityDay.query.filter_by(is_enabled=True).all()
+  if not configured_days:
+    return set(WEEKDAYS)
+  return {day.weekday for day in configured_days}
+
+
+def get_appointment_time_for_queue(queue_number: int):
+  start_at = datetime.combine(date.today(), DEFAULT_START_TIME)
+  slot = start_at + timedelta(minutes=(queue_number - 1) * SLOT_DURATION_MINUTES)
+  return slot.time().replace(second=0, microsecond=0)
 
 
 def appointment_payload(appointment: Appointment):
@@ -11,10 +29,12 @@ def appointment_payload(appointment: Appointment):
     "id": appointment.id,
     "user_id": appointment.user_id,
     "appointment_date": appointment.appointment_date.isoformat(),
+    "appointment_time": appointment.appointment_time.strftime("%H:%M") if appointment.appointment_time else None,
     "reason": appointment.reason,
     "queue_number": appointment.queue_number,
     "status": appointment.status,
   }
+
 
 @api_bp.post("/appointments/book")
 @login_required
@@ -47,7 +67,16 @@ def book_appointment():
   if appointment_date < date.today():
     return jsonify({
       "success": False,
-      "message":"Appointment date cannot be in the past."
+      "message": "Appointment date cannot be in the past."
+    }), 400
+  
+  enabled_days = get_enabled_days_set()
+  day_name = appointment_date.strftime("%A").lower()
+  if day_name not in enabled_days:
+    allowed_days = ", ".join(day.capitalize() for day in sorted(enabled_days, key=WEEKDAYS.index))
+    return jsonify({
+      "success": False,
+      "message": f"Appointments are not available on {day_name.capitalize()}.allwed days: {allowed_days}."
     }), 400
   
   last = Appointment.query.filter_by(
@@ -55,10 +84,12 @@ def book_appointment():
   ).order_by(Appointment.queue_number.desc()).first()
 
   next_queue = 1 if not last else last.queue_number + 1
+  appointment_time = get_appointment_time_for_queue(next_queue)
 
   appointment = Appointment(
     user_id=current_user.id,
     appointment_date=appointment_date,
+    appointment_time=appointment_time,
     reason=reason,
     queue_number=next_queue
   )
@@ -70,7 +101,8 @@ def book_appointment():
     apt_id=appointment.id,
     performed_by=current_user.id,
     action="CREATE",
-    new_status="pending"
+    new_status="pending",
+    notes=f"Appointment booked for {appointment_date.isoformat()} at {appointment_time.strftime('%H:%M')}"
   )
 
   db.session.add(audit)
@@ -81,6 +113,7 @@ def book_appointment():
     "message": "Appointment booked successfully.",
     "data": appointment_payload(appointment)
   }), 201
+
 
 @api_bp.get("/appointments/my")
 @login_required
@@ -93,6 +126,7 @@ def my_appointments():
     "success": True,
     "data": [appointment_payload(appointment) for appointment in appointments]
   }), 200
+
 
 @api_bp.put("/appointments/<int:appointment_id>/cancel")
 @login_required

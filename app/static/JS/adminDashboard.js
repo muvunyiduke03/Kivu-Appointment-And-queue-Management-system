@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const queueDateEl = document.getElementById("queueDate");
   const serveNextBtnEl = document.getElementById("serveNextBtn");
   const notificationBoxEl = document.getElementById("notificationBox");
+  const saveAvailabilityBtnEl = document.getElementById("saveAvailabilityBtn");
+  const availabilityDaysContainerEl = document.getElementById("availabilityDaysContainer");
   const queueTableBodyEl = document.getElementById("queueTableBody");
   const auditLogListEl = document.getElementById("auditLogList");
   const totalAppointmentsEl = document.getElementById("totalAppointments");
@@ -19,6 +21,17 @@ document.addEventListener("DOMContentLoaded", () => {
     serveNext: "/admin/appointments/serve-next",
     updateStatus: (id) => `/admin/appointments/${id}/status`,
     auditLogs: "/admin/audit-logs",
+    availabilityDays: "/admin/availability-days",
+  };
+
+  const WEEKDAY_LABELS = {
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
   };
 
   function getToday(){
@@ -48,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     queueTableBodyEl.innerHTML = "";
 
     if (!appointments.length) {
-      queueTableBodyEl.innerHTML = '<tr><td colspan="7">No appointments for the selected date.</td></tr>';
+      queueTableBodyEl.innerHTML = '<tr><td colspan="8">No appointments for the selected date.</td></tr>';
       return;
     }
 
@@ -59,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <td>${appointment.patient_name || "N/A"}</td>
       <td>${appointment.patient_email || "N/A"}</td>
       <td>${formatDate(appointment.appointment_date)}</td>
+      <td>${appointment.appointment_time || "N/A"}</td>
       <td>${appointment.reason || "N/A"}</td>
       <td><span class="status ${appointment.status}">${appointment.status}</span></td>
       <td>
@@ -73,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.querySelectorAll(".status-select").forEach((select) => {
-      select.addEventListener("change",async (event) => {
+      select.addEventListener("change", async (event) => {
         const appointmentId = event.target.dataset.id;
         const status = event.target.value;
         try {
@@ -91,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
           await Promise.all([loadQueue(), loadSummary(), loadAuditLogs()]);
         } catch (error) {
           showNotification(error.message || "Unable to update status.", "error");
-
           await loadQueue();
         }
       });
@@ -101,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderAuditLogs(logs) {
     auditLogListEl.innerHTML = "";
 
-    if (!logs.length){
+    if (!logs.length) {
       auditLogListEl.innerHTML = "<li>No activity yet.</li>";
       return;
     }
@@ -113,12 +126,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderAvailabilityDays(days) {
+    if (!availabilityDaysContainerEl) return;
+    availabilityDaysContainerEl.innerHTML = "";
+
+    days.forEach((day) => {
+      const wrapper = document.createElement("label");
+      wrapper.className = "weekday-item";
+      wrapper.innerHTML = `
+        <input type="checkbox" class="weekday-checkbox" value="${day.weekday}" ${day.enabled ? "checked" : ""}>
+        <span>${WEEKDAY_LABELS[day.weekday] || day.weekday}</span>
+      `;
+      availabilityDaysContainerEl.appendChild(wrapper);
+    });
+  }
+
+  function getSelectedAvailabilityDays() {
+    return Array.from(document.querySelectorAll(".weekday-checkbox:checked")).map((checkbox) => checkbox.value);
+  }
+
   async function  loadCurrentUser() {
     const response = await fetch(API.me, { credentials: "include" });
     const data = await response.json();
 
     if (!response.ok || !data.success || data.data.role !== "admin") {
-      window.location.href ="/auth/login";
+      window.location.href = "/auth/login";
       return;
     }
 
@@ -127,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadSummary() {
     const appointmentDate = queueDateEl.value || getToday();
-    const response = await fetch(API.summary(appointmentDate), { credentials: "include"});
+    const response = await fetch(API.summary(appointmentDate), { credentials: "include" });
     const data = await response.json();
     if (!response.ok || !data.success) {
       throw new Error(data.message || "Failed to load summary.");
@@ -154,6 +186,33 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAuditLogs(data.data || []);
   }
 
+  async function loadAvailabilityDays() {
+    const response = await fetch(API.availabilityDays, { credentials: "include" });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to load available appointment days.");
+    }
+    renderAvailabilityDays(data.data || []);
+  }
+
+  async function saveAvailabilityDays() {
+    const selectedDays = getSelectedAvailabilityDays();
+    const response = await fetch(API.availabilityDays, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ days: selectedDays }),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to update appointment days.");
+    }
+
+    renderAvailabilityDays(data.data || []);
+    showNotification(data.message || "Appointment days updated successfully!!", "success");
+  }
+
   async function handleServeNext() {
     try {
       const response = await fetch(API.serveNext, { method: "PUT", credentials: "include" });
@@ -177,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
     queueDateEl.value = getToday();
     try {
       await loadCurrentUser();
-      await Promise.all([loadSummary(), loadQueue(), loadAuditLogs()]);
+      await Promise.all([loadSummary(), loadQueue(), loadAuditLogs(), loadAvailabilityDays()]);
     } catch (error) {
       showNotification(error.message || "Failed to load dashboard.", "error");
     }
@@ -187,6 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
     Promise.all([loadQueue(), loadSummary()]).catch((error) => showNotification(error.message || "Failed to load dashboard data.", "error"));
   });
   serveNextBtnEl?.addEventListener("click", handleServeNext);
+  saveAvailabilityBtnEl?.addEventListener("click", () => {
+    saveAvailabilityDays().catch((error) => showNotification(error.message || "Failed to update appointment days.", "error"));
+  });
   logoutBtnEl?.addEventListener("click", handleLogout);
 
   init();

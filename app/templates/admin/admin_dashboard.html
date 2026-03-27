@@ -59,11 +59,23 @@
       </div>
 
       <div class="panel">
-        <h2>Recent Audit Logs</h2>
+        <div class="panel-header panel-header-spaced">
+          <h2>Recent Audit Logs</h2>
+          <a class="secondary-link" href="/admin/audit-logs-page">View all Logs</a>
+        </div>
         <ul id="auditLogList" class="audit-log-list">
           <li>No activity yet.</li>
         </ul>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header panel-header-spaced">
+        <h2>Appointment Days</h2>
+        <button id="saveAvailabilityBtn" class="primary-btn">Save Days</button>
+      </div>
+      <p class="panel-subtitle">Choose which weekdays patients can book appointments</p>
+      <div id="availabilityDaysContainer" class="weekday-grid"></div>
     </section>
 
     <section class="appointments-section panel">
@@ -76,6 +88,7 @@
               <th>Patient</th>
               <th>Email</th>
               <th>Date</th>
+              <th>Time</th>
               <th>Reason</th>
               <th>Status</th>
               <th>Action</th>

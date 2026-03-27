@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Logs - KIVU</title>
+  <link rel="stylesheet" href="../../static/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">Kigali Hospital</div>
+    <div class="topbar-right">
+      <span class="patient-name" id="adminName">Welcome, Admin</span>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+    <section class="welcome-section audit-page-header">
+      <h1>Audit Logs</h1>
+      <a class="secondary-link" href="/admin/dashboard">← Back to dashboard</a>
+    </section>
+
+    <section class="panel">
+      <div id="notificationBox" class="notification" style="display: none;"></div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Appointment</th>
+              <th>Action</th>
+              <th>Old Status</th>
+              <th>New Status</th>
+              <th>Performed By</th>
+              <th>Time</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../static/JS/adminAuditLogs.js"></script>
+</body>
+</html>

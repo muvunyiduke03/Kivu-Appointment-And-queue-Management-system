@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!appointments.length) {
       appointmentsTableBodyEl.innerHTML = `
       <tr>
-        <td colspan="5">No appointments found.</td>
+        <td colspan="6">No appointments found.</td>
       </tr>
       `;
       updateSummaryCards();
@@ -127,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         row.innerHTML = `
         <td>${formatDate(appointment.appointment_date)}</td>
+        <td>${appointment.appointment_time || "N/A"}</td>
         <td>${appointment.reason || "N/A"}</td>
         <td>${appointment.queue_number}</td>
         <td>
@@ -253,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       showNotification(
-        `${data.message} Queue number: ${data.data.queue_number}`,
+        `${data.message} Queue number: ${data.data.queue_number} at ${data.data.appointment_time}`,
         "success"
       );
 

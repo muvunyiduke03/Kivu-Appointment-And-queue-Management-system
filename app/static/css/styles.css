@@ -464,3 +464,62 @@ table td {
 .admin-grid {
   align-items: start;
 }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.panel-header h2 {
+  margin-bottom: 0;
+}
+
+.panel-header-spaced {
+  margin-bottom: 12px;
+}
+
+.panel-subtitle {
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+
+.secondary-link {
+  color: #0f766e;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.secondary-link:hover {
+  text-decoration: underline;
+}
+
+.weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.weekday-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+
+.audit-log-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audit-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

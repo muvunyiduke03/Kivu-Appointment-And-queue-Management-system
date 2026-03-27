@@ -1,11 +1,12 @@
 from datetime import datetime, date
-from flask import request, jsonify
-from flask import render_template
+from flask import request, jsonify, render_template
 from flask_login import login_required, current_user
 
 from . import admin_bp
 from ..extensions import db
-from ..models import Appointment, AuditLog
+from ..models import Appointment, AuditLog, AdminAvailabilityDay
+
+WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
 def appointment_payload(appointment: Appointment):
@@ -15,11 +16,13 @@ def appointment_payload(appointment: Appointment):
     "patient_name": appointment.patient.name if appointment.patient else None,
     "patient_email": appointment.patient.email if appointment.patient else None,
     "appointment_date": appointment.appointment_date.isoformat(),
+    "appointment_time": appointment.appointment_time.strftime("%H:%M") if appointment.appointment_time else None,
     "reason": appointment.reason,
     "queue_number": appointment.queue_number,
     "status": appointment.status,
     "created_at": appointment.created_at.isoformat() if appointment.created_at else None
   }
+
 
 def admin_required():
   if not current_user.is_authenticated:
@@ -35,6 +38,36 @@ def admin_required():
     }), 403
   
   return None
+
+
+def serialize_availability_days():
+  configured = {item.weekday: item.is_enabled for item in AdminAvailabilityDay.query.all()}
+  if not configured:
+    configured = {day: True for day in WEEKDAYS}
+
+  return [
+    {"weekday": day, "enabled": bool(configured.get(day, False))}
+    for day in WEEKDAYS
+  ]
+
+
+@admin_bp.get("/dashboard")
+@login_required
+def admin_dashboard():
+  if current_user.role != "admin":
+    return {"success": False, "message": "Only admins can access this page."}
+  
+  return render_template("admin/admin_dashboard.html")
+
+
+@admin_bp.get("/audit-logs-page")
+@login_required
+def admin_audit_logs_page():
+  if current_user.role != "admin":
+    return {"success": False, "message": "Only admins can access this page."}
+  
+  return render_template("admin/audit_logs.html")
+
 
 @admin_bp.get("/appointments/queue")
 @login_required
@@ -66,6 +99,7 @@ def view_daily_queue():
     "count": len(appointments),
     "appointments": [appointment_payload(appointment) for appointment in appointments]
   }), 200
+
 
 @admin_bp.put("/appointments/<int:appointment_id>/status")
 @login_required
@@ -119,14 +153,6 @@ def update_appointment_status(appointment_id):
     "data": appointment_payload(appointment)
   }), 200
 
-@admin_bp.get("/dashboard")
-@login_required
-def admin_dashboard():
-  if current_user.role != "admin":
-    return {"success": False, "message": "Only admins can access this page."}
-  
-  return render_template("admin/admin_dashboard.html")
-
 
 @admin_bp.get("/dashboard-summary")
 @login_required
@@ -170,6 +196,7 @@ def dashboard_summary():
       "next_patient_name": next_pending.patient.name if next_pending and next_pending.patient else None
     }
   }), 200
+
 
 @admin_bp.put("/appointments/serve-next")
 @login_required
@@ -232,6 +259,62 @@ def get_appointment_details(appointment_id):
     "data": appointment_payload(appointment)
   }), 200
 
+
+@admin_bp.get("availability-days")
+@login_required
+def get_availability_days():
+  auth_error = admin_required()
+  if auth_error:
+    return auth_error
+  
+  return jsonify({
+    "success": True,
+    "data": serialize_availability_days()
+  }), 200
+
+
+@admin_bp.put("availability-days")
+@login_required
+def update_availability_days():
+  auth_error = admin_required()
+  if auth_error:
+    return auth_error
+  
+  data = request.get_json(silent=True) or {}
+  days = data.get("days")
+
+  if not isinstance(days, list):
+    return jsonify({
+      "success": False,
+      "message": "Days must be an array of weekdays names."
+    }), 400
+  
+  normalized_days = {str(day).strip().lower() for day in days if str(day).strip()}
+  invalid_days = sorted(day for day in normalized_days if day not in WEEKDAYS)
+
+  if invalid_days:
+    return jsonify({
+      "success": False,
+      "message": f"Invalid weekday values: {', '.join(invalid_days)}"
+    }), 400
+  
+  existing = {item.weekday: item for item in AdminAvailabilityDay.query.all()}
+
+  for weekday in WEEKDAYS:
+    enabled = weekday in normalized_days
+    if weekday in existing:
+      existing[weekday].is_enabled = enabled
+    else:
+      db.session.add(AdminAvailabilityDay(weekday=weekday, is_enabled=enabled))
+
+      db.session.commit()
+
+      return jsonify({
+        "success": True,
+        "message": "Available appointments days updated successfully.",
+        "data": serialize_availability_days()
+      }), 200
+    
 
 @admin_bp.get("/audit-logs")
 @login_required

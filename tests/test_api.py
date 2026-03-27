@@ -167,6 +167,7 @@ def test_book_appointment(client, patient_user):
   assert data["data"]["appointment_date"] == future_date
   assert data["data"]["queue_number"] == 1
   assert data["data"]["status"] == "pending"
+  assert data["data"]["appointment_time"] == "08:00"
 
 def test_view_my_appointments(client, patient_user):
   login(client, "patient@gmail.com", "Patient123!")
@@ -293,3 +294,51 @@ def test_admin_dashboard_renders_for_logged_in_admin(client, admin_user):
   assert response.status_code == 200
   assert b"Admin Queue Dashboard" in response.data
   assert b"/static/JS/adminDashboard.js" in response.data
+
+  def test_admin_can_update_availability_days(client, admin_user):
+    login(client, "admin@hospital.com", "Hoadmin123$")
+
+  response = client.put(
+    "/admin/availability-days",
+    json={"days": ["monday", "wednesday", "friday"]}
+  )
+
+  assert response.status_code == 200
+  data = response.get_json()
+  assert data["success"] is True
+
+  enabled_days = {item["weekday"] for item in data["data"] if item["enabled"]}
+  assert enabled_days == {"monday", "wednesday", "friday"}
+
+
+def test_book_appointment_rejects_unavailable_day(client, patient_user, admin_user):
+  login(client, "admin@hospital.com", "Hoadmin123$")
+  client.put("/admin/availability-days", json={"days": ["monday"]})
+  client.post("/api/auth/logout")
+
+  login(client, "patient@gmail.com", "Patient123!")
+
+  target = date.today()
+  while target.strftime("%A").lower() == "monday":
+    target = target + timedelta(days=1)
+
+  response = client.post(
+    "/api/appointments/book",
+    json={
+      "appointment_date": target.isoformat(),
+      "reason": "General checkup"
+    }
+  )
+
+  assert response.status_code == 400
+  payload = response.get_json()
+  assert payload["success"] is False
+
+
+def test_admin_audit_logs_page_renders(client, admin_user):
+  login(client, "admin@hospital.com", "Hoadmin123$")
+
+  response = client.get("/admin/audit-logs-page")
+
+  assert response.status_code == 200
+  assert b"Audit Logs" in response.data
