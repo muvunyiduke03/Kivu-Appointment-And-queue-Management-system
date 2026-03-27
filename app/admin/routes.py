@@ -1,6 +1,7 @@
 from datetime import datetime, date
 from flask import request, jsonify, render_template
 from flask_login import login_required, current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from . import admin_bp
 from ..extensions import db
@@ -49,6 +50,11 @@ def serialize_availability_days():
     {"weekday": day, "enabled": bool(configured.get(day, False))}
     for day in WEEKDAYS
   ]
+
+
+def ensure_availability_days_table_exists():
+  """Create the availability table if the database is missing this migration."""
+  AdminAvailabilityDay.__table__.create(bind=db.engine, checkfirst=True)
 
 
 @admin_bp.get("/dashboard")
@@ -267,10 +273,17 @@ def get_availability_days():
   if auth_error:
     return auth_error
   
-  return jsonify({
-    "success": True,
-    "data": serialize_availability_days()
-  }), 200
+  try:
+    ensure_availability_days_table_exists()
+    return jsonify({
+      "success": True,
+      "data": serialize_availability_days()
+    }), 200
+  except SQLAlchemyError:
+    return jsonify({
+      "success": False,
+      "message": "Unable to load appointment days. run migrations"
+    }), 500
 
 
 @admin_bp.put("/availability-days")
@@ -280,40 +293,49 @@ def update_availability_days():
   if auth_error:
     return auth_error
   
-  data = request.get_json(silent=True) or {}
-  days = data.get("days")
+  try:
+    ensure_availability_days_table_exists()
 
-  if not isinstance(days, list):
+    data = request.get_json(silent=True) or {}
+    days = data.get("days")
+
+    if not isinstance(days, list):
+      return jsonify({
+        "success": False,
+        "message": "Days must be an array of weekdays names."
+      }), 400
+  
+    normalized_days = {str(day).strip().lower() for day in days if str(day).strip()}
+    invalid_days = sorted(day for day in normalized_days if day not in WEEKDAYS)
+
+    if invalid_days:
+      return jsonify({
+        "success": False,
+        "message": f"Invalid weekday values: {', '.join(invalid_days)}"
+      }), 400
+  
+    existing = {item.weekday: item for item in AdminAvailabilityDay.query.all()}
+
+    for weekday in WEEKDAYS:
+      enabled = weekday in normalized_days
+      if weekday in existing:
+        existing[weekday].is_enabled = enabled
+      else:
+        db.session.add(AdminAvailabilityDay(weekday=weekday, is_enabled=enabled))
+
+    db.session.commit()
+
+    return jsonify({
+      "success": True,
+      "message": "Available appointments days updated successfully.",
+      "data": serialize_availability_days()
+    }), 200
+  except SQLAlchemyError:
+    db.session.rollback()
     return jsonify({
       "success": False,
-      "message": "Days must be an array of weekdays names."
-    }), 400
-  
-  normalized_days = {str(day).strip().lower() for day in days if str(day).strip()}
-  invalid_days = sorted(day for day in normalized_days if day not in WEEKDAYS)
-
-  if invalid_days:
-    return jsonify({
-      "success": False,
-      "message": f"Invalid weekday values: {', '.join(invalid_days)}"
-    }), 400
-  
-  existing = {item.weekday: item for item in AdminAvailabilityDay.query.all()}
-
-  for weekday in WEEKDAYS:
-    enabled = weekday in normalized_days
-    if weekday in existing:
-      existing[weekday].is_enabled = enabled
-    else:
-      db.session.add(AdminAvailabilityDay(weekday=weekday, is_enabled=enabled))
-
-  db.session.commit()
-
-  return jsonify({
-    "success": True,
-    "message": "Available appointments days updated successfully.",
-    "data": serialize_availability_days()
-  }), 200
+      "message": "Unable to save appointment days."
+    }), 500
     
 
 @admin_bp.get("/audit-logs")

@@ -38,6 +38,25 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Date().toISOString().split("T")[0];
   }
 
+  async function parseApiResponse(response, fallbackMessage) {
+    const contentType = response.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+    const payload = isJson ? await response.json() : null;
+
+    if (!response.ok) {
+      if (payload?.message) {
+        throw new Error(payload.message);
+      }
+      throw new Error(`${fallbackMessage} (HTTP ${response.status})`);
+    }
+
+    if (!payload || !payload.success) {
+      throw new Error(payload?.message || fallbackMessage);
+    }
+
+    return payload;
+  }
+
   function showNotification(message, type = "success") {
     if (!notificationBoxEl) return;
     notificationBoxEl.textContent = message;
@@ -160,38 +179,26 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadSummary() {
     const appointmentDate = queueDateEl.value || getToday();
     const response = await fetch(API.summary(appointmentDate), { credentials: "include" });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Failed to load summary.");
-    }
+    const data = await parseApiResponse(response, "Failed to load summary.");
     renderSummary(data.data);
   }
 
   async function loadQueue() {
     const appointmentDate = queueDateEl.value || getToday();
     const response = await fetch(API.queue(appointmentDate), { credentials: "include" });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Failed to load queue.");
-    }
+    const data = await parseApiResponse(response, "Failed to load queue.");
     renderQueue(data.appointments || []);
   }
 
   async function loadAuditLogs() {
     const response = await fetch(API.auditLogs, { credentials: "include" });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Failed to load audit logs.");
-    }
+    const data = await parseApiResponse(response, "Failed to load audit logs.");
     renderAuditLogs(data.data || []);
   }
 
   async function loadAvailabilityDays() {
     const response = await fetch(API.availabilityDays, { credentials: "include" });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Failed to load available appointment days.");
-    }
+    const data = await parseApiResponse(response, "Failed to load available appointment days.");
     renderAvailabilityDays(data.data || []);
   }
 
@@ -204,10 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify({ days: selectedDays }),
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Failed to update appointment days.");
-    }
+    const data = await parseApiResponse(response, "Failed to update appointment days.");
 
     renderAvailabilityDays(data.data || []);
     showNotification(data.message || "Appointment days updated successfully!!", "success");
