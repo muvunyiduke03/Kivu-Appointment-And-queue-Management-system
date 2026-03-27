@@ -1,6 +1,7 @@
 from flask import request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime, date, time, timedelta
+from sqlalchemy.exc import SQLAlchemyError
 from . import api_bp
 from ..extensions import db
 from ..models import Appointment, AuditLog, AdminAvailabilityDay
@@ -12,7 +13,14 @@ WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", 
 
 
 def get_enabled_days_set():
-  configured_days = AdminAvailabilityDay.query.filter_by(is_enabled=True).all()
+  try:
+    configured_days = AdminAvailabilityDay.query.filter_by(is_enabled=True).all()
+  except SQLAlchemyError:
+    # Keep patients booking available when the table fails.
+
+    AdminAvailabilityDay.__table__.create(bind=db.engine, checkfirst=True)
+    configured_days = AdminAvailabilityDay.query.filter_by(is_enabled=True).all()
+
   if not configured_days:
     return set(WEEKDAYS)
   return {day.weekday for day in configured_days}
@@ -76,7 +84,7 @@ def book_appointment():
     allowed_days = ", ".join(day.capitalize() for day in sorted(enabled_days, key=WEEKDAYS.index))
     return jsonify({
       "success": False,
-      "message": f"Appointments are not available on {day_name.capitalize()}.allwed days: {allowed_days}."
+      "message": f"Appointments are not available on {day_name.capitalize()}.Allowed days: {allowed_days}."
     }), 400
   
   last = Appointment.query.filter_by(
