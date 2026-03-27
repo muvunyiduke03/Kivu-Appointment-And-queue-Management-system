@@ -260,7 +260,7 @@ def get_appointment_details(appointment_id):
   }), 200
 
 
-@admin_bp.get("availability-days")
+@admin_bp.get("/availability-days")
 @login_required
 def get_availability_days():
   auth_error = admin_required()
@@ -273,7 +273,7 @@ def get_availability_days():
   }), 200
 
 
-@admin_bp.put("availability-days")
+@admin_bp.put("/availability-days")
 @login_required
 def update_availability_days():
   auth_error = admin_required()
@@ -307,13 +307,13 @@ def update_availability_days():
     else:
       db.session.add(AdminAvailabilityDay(weekday=weekday, is_enabled=enabled))
 
-      db.session.commit()
+  db.session.commit()
 
-      return jsonify({
-        "success": True,
-        "message": "Available appointments days updated successfully.",
-        "data": serialize_availability_days()
-      }), 200
+  return jsonify({
+    "success": True,
+    "message": "Available appointments days updated successfully.",
+    "data": serialize_availability_days()
+  }), 200
     
 
 @admin_bp.get("/audit-logs")

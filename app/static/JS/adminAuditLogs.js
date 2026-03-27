@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const response = await fetch(API.me, { credentials: "include" });
     const data = await response.json();
 
-    if (!response.ok || !data.data.role !== "admin") {
+    if (!response.ok || !data.success || data.data.role !== "admin") {
       window.location.href = "/auth/login";
       return;
     }
