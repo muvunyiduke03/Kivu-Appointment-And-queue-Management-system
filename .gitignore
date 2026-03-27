@@ -1,0 +1,36 @@
+# environment
+.env
+.flaskenv
+
+# virtual environments
+venv/
+.venv/
+env/
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# instance folder
+instance/
+
+# logs
+*.log
+
+# editor files
+.vscode/
+.idea/
+
+# system files
+.DS_Store
+Thumbs.db
+
+# test/cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# migration cache only
+migrations/__pycache__/
