@@ -131,4 +131,8 @@ After verifying `FLASK_APP` and `.env` values.
 
 ---
 
+##  Tutorial on how to use KIVU-HAQMS
+
+🔗 https://youtu.be/4BzwAvpUcDo
+
 Copyright © MUVUNYI Duke 2026
